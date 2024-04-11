@@ -1,9 +1,16 @@
 #include <iostream>
-#include <map>
 #include <string>
 
 class Assoc {
-    std::map<std::string, std::string> data;
+    struct Node {
+        std::string email;
+        std::string phone;
+        Node* next;
+
+        Node(const std::string& e, const std::string& p) : email(e), phone(p), next(nullptr) {}
+    };
+
+    Node* head;
     int errorCode;
 
 public:
@@ -12,42 +19,56 @@ public:
         EMAIL_NOT_FOUND
     };
 
-    Assoc() : errorCode(NO_ERROR) {}
-    void createAssociations(const std::map<std::string, std::string>& associations) {
-        data = associations;
-    }
+    Assoc() : head(nullptr), errorCode(NO_ERROR) {}
 
-
-    // [] ()
-    std::string operator[](const std::string& email) {
-        if (data.find(email) != data.end()) {
-            return data[email];
-        } else {
-            errorCode = EMAIL_NOT_FOUND;
-            return "";
+    ~Assoc() {
+        while (head != nullptr) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
         }
     }
+
+    void createAssociations(const std::string& email, const std::string& phone) {
+        Node* newNode = new Node(email, phone);
+        newNode->next = head;
+        head = newNode;
+    }
+
+    std::string operator[](const std::string& email) {
+        Node* current = head;
+        while (current != nullptr) {
+            if (current->email == email) {
+                errorCode = NO_ERROR;
+                return current->phone;
+            }
+            current = current->next;
+        }
+        errorCode = EMAIL_NOT_FOUND;
+        return "";
+    }
+
     std::string operator()(const std::string& email) {
         return (*this)[email];
     }
-
 
     int getErrorCode() const {
         return errorCode;
     }
 
-
-    // << >>
     friend std::ostream& operator<<(std::ostream& os, const Assoc& assoc) {
-        for (const auto& pair : assoc.data) {
-            os << "Email: " << pair.first << ", Phone: " << pair.second << std::endl;
+        Node* current = assoc.head;
+        while (current != nullptr) {
+            os << "Email: " << current->email << ", Phone: " << current->phone << std::endl;
+            current = current->next;
         }
         return os;
     }
+
     friend std::istream& operator>>(std::istream& is, Assoc& assoc) {
         std::string email, phone;
         while (is >> email >> phone) {
-            assoc.data[email] = phone;
+            assoc.createAssociations(email, phone);
         }
         return is;
     }
@@ -55,31 +76,23 @@ public:
 
 int main() {
     Assoc contacts;
-    
-    std::map<std::string, std::string> associations = {
-        {"bobr@gmail.com",  "1234567890"},
-        {"golub@gmail.com", "4173481342"},
-        {"bobik@gmail.com", "1837126542"},
-        {"pes_patron@gamil.com", "1341534563"},
-        {"kaboom@gamil.com", "7528929101"}
-    };
-    contacts.createAssociations(associations);
+
+    contacts.createAssociations("bobr@gmail.com", "1234567890");
+    contacts.createAssociations("golub@gmail.com", "4173481342");
+    contacts.createAssociations("bobik@gmail.com", "1837126542");
 
     std::cout << "Associations:\n";
     std::cout << contacts;
 
     std::cout << "[]:\n";
-    std::cout << contacts["bobr@gmail.com"] << std::endl;
-    std::cout << contacts["golub@gmail.com"] << std::endl;
-    std::cout << contacts["bobik@gmail.com"] << std::endl;
-    std::cout << contacts["pes_patron@gamil.com"] << std::endl;
-    std::cout << contacts["kaboom@gamil.com"] << std::endl;
+    std::cout << "Phone for bobr@gmail.com: " << contacts["bobr@gmail.com"] << std::endl;
+    std::cout << "Phone for golub@gmail.com: " << contacts["golub@gmail.com"] << std::endl;
+    std::cout << "Phone for bobik@gmail.com: " << contacts["bobik@gmail.com"] << std::endl;
 
     std::cout << "():\n";
-    std::cout << contacts("bobr@gmail.com") << std::endl;
-    std::cout << contacts("golub@gmail.com") << std::endl;
-    std::cout << contacts("bobik@gmail.com") << std::endl;
-    std::cout << contacts("pes_patron@gamil.com") << std::endl;
-    std::cout << contacts("kaboom@gamil.com") << std::endl;
+    std::cout << "Phone for bobr@gmail.com: " << contacts("bobr@gmail.com") << std::endl;
+    std::cout << "Phone for golub@gmail.com: " << contacts("golub@gmail.com") << std::endl;
+    std::cout << "Phone for bobik@gmail.com: " << contacts("bobik@gmail.com") << std::endl;
+
     return 0;
 }
